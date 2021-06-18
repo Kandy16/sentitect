@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import spacy
 
-def main(data):
-
+def main(args):
+    data = pd.read_csv(os.path.join(args.data_path,"output-data-prep.csv"))
     print(data.head(5))
     #VECTORIZE the sentence using spacy
     nlp = spacy.load('en_core_web_sm')
@@ -25,12 +25,17 @@ def main(data):
         
         emb = r.vector
         review_emb = emb.reshape(-1)
-        X_train.append(review_emb)
+        tmp = review_emb.tolist()
+        tmp = [str(t) for t in tmp]
+        X_train.append(';'.join(tmp))
 
-    X_train = np.array(X_train)
-    y_train = data.sentiment.values if 'sentiment' in data.columns else None
-    
-    return X_train,y_train
+    print(X_train)
+    print(np.array(X_train))
+    #X_train = np.array(X_train)
+    #y_train = data.sentiment.values if 'sentiment' in data.columns else None
+    #return X_train,y_train
+    data['vectors'] = X_train
+    return data
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -39,7 +44,12 @@ if __name__ == "__main__":
         type=str,
         help='Path to the training data'
     )
-
+    parser.add_argument(
+        '--output',
+        type=str,
+        help='Output path'
+    )   
     args = parser.parse_args()
     result = main(args)
-    print(result[0])
+    print(result.head(5))
+    result.to_csv(os.path.join(args.output,"output-vectorize.csv"), index=False)

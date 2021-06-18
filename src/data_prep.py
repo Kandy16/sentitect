@@ -42,9 +42,16 @@ if __name__ == "__main__":
         type=int,
         help='Count of data to be processed. -1 refers to all'
     )
+    parser.add_argument(
+        '--output',
+        type=str,
+        help='Output path'
+    )    
     args = parser.parse_args()
     if args.data_count == -1:
         args.data_count = None
     
+    print('arguments:',args)
     result = main(args)
     print(result.head(5))
+    result.to_csv(os.path.join(args.output,"output-data-prep.csv"), index=False)
