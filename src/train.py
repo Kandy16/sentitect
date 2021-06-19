@@ -4,6 +4,9 @@ import argparse
 import numpy as np
 import pandas as pd
 
+from azureml.core import Run
+from azureml.core.runconfig import DataPath
+
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 
@@ -11,6 +14,8 @@ from scipy.stats import randint as sp_randint
 from scipy.stats import uniform as sp_uniform
 
 import lightgbm as lgbm
+
+import joblib
 
 def run(args):
     
@@ -24,10 +29,11 @@ def run(args):
     y_train = data.sentiment.values
 
     X_train, X_test, y_train, y_test = train_test_split(X_train,y_train,test_size=0.2, stratify=y_train, random_state = 42)
+    X_val, X_test, y_val, y_test = train_test_split(X_test,y_test,test_size=0.5, stratify=y_test, random_state = 42)
 
     # Get the train and test data for the training sequence
     train_data = lgbm.Dataset(X_train, label=y_train)
-    test_data = lgbm.Dataset(X_test, label=y_test)
+    val_data = lgbm.Dataset(X_val, label=y_val)
 
     '''
     # Parameters we'll use for the prediction
@@ -46,14 +52,14 @@ def run(args):
 
     classifier = lgbm.train(parameters,
                     train_data,
-                    valid_sets= test_data,
+                    valid_sets= val_data,
                     num_boost_round=100,
                     early_stopping_rounds=10)
     '''
 
     fit_params={"early_stopping_rounds":30, 
             "eval_metric" : 'auc', 
-            "eval_set" : [(X_test,y_test)],
+            "eval_set" : [(X_val,y_val)],
             'eval_names': ['valid'],
             #'callbacks': [lgbm.reset_parameter(learning_rate=learning_rate_010_decay_power_099)],
             'verbose': 100,
@@ -127,6 +133,19 @@ def run(args):
     #			callbacks=[lgbm.reset_parameter(learning_rate=learning_rate_010_decay_power_0995)])
     clf_final.fit(X_train, y_train, **fit_params)
 
+    # get hold of the current run
+    runObj = Run.get_context()
+
+    print('Predict the test set')
+    y_hat = clf_final.predict(X_test)
+
+    # calculate accuracy on the prediction
+    acc = np.average(y_hat == y_test)
+    print('Accuracy is', acc)
+
+    runObj.log('accuracy', float(acc))
+
+
     return clf_final
 
 
@@ -149,8 +168,38 @@ if __name__ == "__main__":
     
     result = run(args)
 
-    result.booster_.save_model(os.path.join(args.output, 'best-model.txt'))
+    result.booster_.save_model(os.path.join(args.output, 'sentitect-best-model.txt'))
+    joblib.dump(value=result, filename= os.path.join(args.output, 'sentitect-best-model.pkl'))
+  
+    runObj = Run.get_context()
+    ws = runObj.experiment.workspace
 
+    datastore = ws.get_default_datastore()
+    datastore.upload(src_dir=args.output,
+                 target_path='datasets/best-model/',
+                 overwrite=True)
+
+
+    model = runObj.register_model(model_name='sentitect_lightgbm',
+                           model_path=os.path.join(args.output, 'sentitect-best-model.pkl'))
+    print(model.name, model.id, model.version, sep='\t')
+
+    #os.environ["sentitect-best-model"] = os.path.join(args.output, 'sentitect-best-model.pkl')
+
+    #print(os.getenv('sentitect-best-model'))    
+
+    #print(DataPath(datastore, 'datasets/best-model/sentitect-best-model.pkl').path_on_datastore)
+
+    # get hold of the current run
+    #runObj = Run.get_context()
+
+    #model = runObj.register_model(model_name='sentitect-best-model-txt',
+    #                        model_path=os.path.join(args.output, 'best-model.txt'))
+
+    #model = runObj.register_model(model_name='sentitect-best-model-pkl',
+    #                        model_path=os.path.join(args.output, 'sentitect-best-model.pkl'))
+
+    #print(model.name, model.id, model.version, sep='\t')
     #print(result.head(5))
     #result.to_csv(os.path.join(args.output,"output-data-prep.csv"), index=False)
 
