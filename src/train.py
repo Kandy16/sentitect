@@ -19,6 +19,7 @@ import joblib
 
 def run(args):
     
+    # read the vectors an convert them to numpy
     data = pd.read_csv(os.path.join(args.data_path,"output-vectorize.csv"))
     data['vectors'] = data['vectors'].apply(lambda row: [float(t) for t in row.split(';')])
 
@@ -28,10 +29,12 @@ def run(args):
     
     y_train = data.sentiment.values
 
+    # dataset is sepearted into training, test and validation
     X_train, X_test, y_train, y_test = train_test_split(X_train,y_train,test_size=0.2, stratify=y_train, random_state = 42)
     X_val, X_test, y_val, y_test = train_test_split(X_test,y_test,test_size=0.5, stratify=y_test, random_state = 42)
 
-    # Get the train and test data for the training sequence
+    # Get the train and val data for the training sequence
+    #test will at predicting the final accuracy
     train_data = lgbm.Dataset(X_train, label=y_train)
     val_data = lgbm.Dataset(X_val, label=y_val)
 
@@ -56,6 +59,9 @@ def run(args):
                     num_boost_round=100,
                     early_stopping_rounds=10)
     '''
+
+    # at the beginning random search and then grid search for scale_pos_weight parameter. choose the best model and compute 
+    # accuracy on test dataset
 
     fit_params={"early_stopping_rounds":30, 
             "eval_metric" : 'auc', 
@@ -104,8 +110,6 @@ def run(args):
 
     gs_sample_weight.fit(X_train, y_train, **fit_params)
     print('Best score reached: {} with params: {} '.format(gs_sample_weight.best_score_, gs_sample_weight.best_params_))
-
-
 
     #Configure from the HP optimisation
     clf_final = lgbm.LGBMClassifier(**clf_sw.get_params())
@@ -168,21 +172,18 @@ if __name__ == "__main__":
     
     result = run(args)
 
+    # the best model is saved to a persistent location
+
     result.booster_.save_model(os.path.join(args.output, 'sentitect-best-model.txt'))
     joblib.dump(value=result, filename= os.path.join(args.output, 'sentitect-best-model.pkl'))
-  
+
     runObj = Run.get_context()
     ws = runObj.experiment.workspace
-
     datastore = ws.get_default_datastore()
+
     datastore.upload(src_dir=args.output,
                  target_path='datasets/best-model/',
                  overwrite=True)
-
-
-    model = runObj.register_model(model_name='sentitect_lightgbm',
-                           model_path=os.path.join(args.output, 'sentitect-best-model.pkl'))
-    print(model.name, model.id, model.version, sep='\t')
 
     #os.environ["sentitect-best-model"] = os.path.join(args.output, 'sentitect-best-model.pkl')
 

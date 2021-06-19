@@ -27,7 +27,7 @@ print(ws.name, ws.location, ws.resource_group, sep='\t')
 
 aml_run_config = RunConfiguration()
 
-# choose a name for your cluster
+# choose a name for your cluster. If not available then create the instance
 compute_name = os.environ.get("AML_COMPUTE_CLUSTER_NAME", "senti-cluster")
 if compute_name in ws.compute_targets:
     compute_target = ws.compute_targets[compute_name]
@@ -58,6 +58,7 @@ else:
 # For a more detailed view of current AmlCompute status, use get_status()
 print(compute_target.get_status().serialize())
 
+# assign target to run_config
 aml_run_config.target = compute_target
 
 # to install required packages
@@ -67,6 +68,7 @@ env.python.conda_dependencies = cd
  
 aml_run_config.environment = env
 
+#first of all the local data folder is copied into a datastore.
 datastore = ws.get_default_datastore()
 datastore.upload(src_dir='../data',
                  target_path='data/',
@@ -77,12 +79,14 @@ dataset = Dataset.File.from_files(path=(datastore, 'data/'))
 output_data1 = OutputFileDatasetConfig(destination = (datastore, 'outputdataset/{run-id}'))
 output_data_dataset = output_data1.register_on_complete(name = 'prepared_output_data')
 
+# the data preparation does primitive cleaning and stores the intermediate result in datastore
+#data-count -1 will read all the data. 100 or 200 size is considered a toy set
 data_prep_step = PythonScriptStep(
     source_directory='.',
     script_name='data_prep.py',
     arguments=[
         '--data-path', dataset.as_named_input('input').as_mount(),
-        '--data-count',200,
+        '--data-count',-1,
         "--output", output_data1
         ],
     compute_target=compute_target,
@@ -90,6 +94,8 @@ data_prep_step = PythonScriptStep(
     allow_reuse=True
 )
 
+# vectorization step takes the previous intermediate result and uses spacy nlp pipeline to compute vectors of sentences
+# the intermediate result is stored in datastore
 output_data2 = OutputFileDatasetConfig(destination = (datastore, 'outputdataset/{run-id}'))
 
 vectorize_step = PythonScriptStep(
@@ -104,6 +110,9 @@ vectorize_step = PythonScriptStep(
     allow_reuse=True
 )
 
+# training step involves multiple models and compare their performance of validation dataset
+# It uses randomsearch and gridsearch of parameters and compares 100 models
+# the efficient model is saved to a persistent location
 output_data3 = OutputFileDatasetConfig(destination = (datastore, 'outputdataset/{run-id}'))
 
 train_step = PythonScriptStep(
@@ -117,7 +126,7 @@ train_step = PythonScriptStep(
     runconfig=aml_run_config,
     allow_reuse=True
 )
-
+# the pipeline sequence
 train_models = [data_prep_step, vectorize_step, train_step]
 
 from azureml.pipeline.core import Pipeline

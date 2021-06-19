@@ -11,6 +11,7 @@ from azureml.core.runconfig import DataPath
 def init():
     global model
     
+    # copy the model to local space and build it and run it
     ws = Workspace.from_config()
     datastore = ws.get_default_datastore()
     dataset = Dataset.File.from_files(path=(datastore, 'datasets/best-model/'))
