@@ -1,10 +1,14 @@
-# sentitect
-Sentiment detection using machine learning
+# sentitect - Sentiment detection using machine learning
+* Used LightGBM algorithm
+* Used Azure ML python sdk
 
+The development and run environment can be replicated using conda and environment.yml file. 
 
-1) Use LightGBM algorithm
-2) Store Sentiment analysis dataset in CSV format
-3) Run in Azure (Training pipleine and deployment)
+### Important files to consider
 
+1) 'lightgbm.ipynb'in ds-experiments folder contains the rough model development (Taken as input)
+2) 'data' folder contains the sentiment analysis dataset. data-preparation.py creates the CSV files
+3) 'src' folder contains all the codes to be run with azure environment. Uses pipelines.
+4) 'run_train.py' amd 'run_deploy.py' are the main files to perform training and deployment
 
-* APIs or/and Web interface to test, model shift identification, Autonomous/Induced training and update
+Inline comments will be there to assist understanding
