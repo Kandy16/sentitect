@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import spacy
 
-def main(args):
+def run(args):
     data = pd.read_csv(os.path.join(args.data_path,"output-data-prep.csv"))
     print(data.head(5))
     #VECTORIZE the sentence using spacy
@@ -16,12 +16,12 @@ def main(args):
     # Disable irrelevant sub-pipelines. The quality of vectors may get affected -- need to test
     X_train = []
 
-    '''    
+        
     for r in nlp.pipe(data.review.values, disable=['parser','ner','entity_linker','entity_ruler',
                     'textcat','textcat_multilabel','lemmatizer', 'morphologizer',
                     'attribute_ruler','senter','sentencizer','tok2vec','transformer']):
-    '''
-    for r in nlp.pipe(data.review.values):
+    
+    #for r in nlp.pipe(data.review.values):
         
         emb = r.vector
         review_emb = emb.reshape(-1)
@@ -29,8 +29,8 @@ def main(args):
         tmp = [str(t) for t in tmp]
         X_train.append(';'.join(tmp))
 
-    print(X_train)
-    print(np.array(X_train))
+    #print(X_train)
+    #print(np.array(X_train))
     #X_train = np.array(X_train)
     #y_train = data.sentiment.values if 'sentiment' in data.columns else None
     #return X_train,y_train
@@ -40,16 +40,19 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--data_path',
+        '--data-path',
+        dest='data_path',
         type=str,
+        required=True,
         help='Path to the training data'
     )
     parser.add_argument(
         '--output',
         type=str,
+        required=True,
         help='Output path'
-    )   
+    )    
     args = parser.parse_args()
-    result = main(args)
+    result = run(args)
     print(result.head(5))
     result.to_csv(os.path.join(args.output,"output-vectorize.csv"), index=False)

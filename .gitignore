@@ -80,6 +80,7 @@ target/
 # IPython
 profile_default/
 ipython_config.py
+*.ipynb_aml_checkpoints/
 
 # pyenv
 .python-version
@@ -129,4 +130,9 @@ dmypy.json
 .pyre/
 
 # azure temp files
-.amltmp
+*.amltmp
+*.amlignore
+
+
+#temporary stuff
+temp/

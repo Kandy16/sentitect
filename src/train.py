@@ -12,7 +12,7 @@ from scipy.stats import uniform as sp_uniform
 
 import lightgbm as lgbm
 
-def main(args):
+def run(args):
     
     data = pd.read_csv(os.path.join(args.data_path,"output-vectorize.csv"))
     data['vectors'] = data['vectors'].apply(lambda row: [float(t) for t in row.split(';')])
@@ -133,18 +133,21 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--data_path',
+        '--data-path',
+        dest='data_path',
         type=str,
+        required=True,
         help='Path to the training data'
     )
     parser.add_argument(
         '--output',
         type=str,
+        required=True,
         help='Output path'
-    )    
+    )        
     args = parser.parse_args()
     
-    result = main(args)
+    result = run(args)
 
     result.booster_.save_model(os.path.join(args.output, 'best-model.txt'))
 

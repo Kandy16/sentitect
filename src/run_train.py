@@ -70,7 +70,7 @@ aml_run_config.environment = env
 datastore = ws.get_default_datastore()
 datastore.upload(src_dir='../data',
                  target_path='data/',
-                 overwrite=True)
+                 overwrite=False)
 
 dataset = Dataset.File.from_files(path=(datastore, 'data/'))
 
@@ -81,8 +81,8 @@ data_prep_step = PythonScriptStep(
     source_directory='.',
     script_name='data_prep.py',
     arguments=[
-        '--data_path', dataset.as_named_input('input').as_mount(),
-        '--data_count',-1,
+        '--data-path', dataset.as_named_input('input').as_mount(),
+        '--data-count',200,
         "--output", output_data1
         ],
     compute_target=compute_target,
@@ -96,7 +96,7 @@ vectorize_step = PythonScriptStep(
     source_directory='.',
     script_name='vectorize.py',
     arguments=[
-        '--data_path', output_data1.as_input(),
+        '--data-path', output_data1.as_input(),
         "--output", output_data2
         ],
     compute_target=compute_target,
@@ -110,7 +110,7 @@ train_step = PythonScriptStep(
     source_directory='.',
     script_name='train.py',
     arguments=[
-        '--data_path', output_data2.as_input(),
+        '--data-path', output_data2.as_input(),
         "--output", output_data3
         ],
     compute_target=compute_target,

@@ -15,7 +15,7 @@ def text_clean(text):
     return text
 
 
-def main(args):
+def run(args):
     train_df = pd.read_csv(os.path.join(args.data_path,"train-data.csv"))
     train_df = shuffle(train_df)[0:args.data_count]
 
@@ -33,18 +33,24 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--data_path',
+        '--data-path',
+        dest='data_path',
         type=str,
+        required=True,
         help='Path to the training data'
     )
     parser.add_argument(
-        '--data_count',
+        '--data-count',
+        dest='data_count',
         type=int,
+        nargs='?',
+        const=-1,
         help='Count of data to be processed. -1 refers to all'
     )
     parser.add_argument(
         '--output',
         type=str,
+        required=True,
         help='Output path'
     )    
     args = parser.parse_args()
@@ -52,6 +58,6 @@ if __name__ == "__main__":
         args.data_count = None
     
     print('arguments:',args)
-    result = main(args)
+    result = run(args)
     print(result.head(5))
     result.to_csv(os.path.join(args.output,"output-data-prep.csv"), index=False)
