@@ -12,3 +12,17 @@ The development and run environment can be replicated using conda and environmen
 4) 'run_train.py' amd 'run_deploy.py' are the main files to perform training and deployment
 
 Inline comments will be there to assist understanding
+
+
+The codes in the following links are used to build the code:
+https://www.kaggle.com/mehdislim01/simple-yet-efficient-spacy-lightgbm-combination
+https://medium.com/@invest_gs/classifying-tweets-with-lightgbm-and-the-universal-sentence-encoder-2a0208de0424
+
+Azure info:
+https://docs.microsoft.com/en-us/azure/machine-learning/tutorial-train-models-with-aml
+https://docs.microsoft.com/en-us/azure/machine-learning/tutorial-deploy-models-with-aml
+
+https://docs.microsoft.com/en-us/azure/machine-learning/tutorial-pipeline-batch-scoring-classification
+https://docs.microsoft.com/en-us/azure/machine-learning/tutorial-convert-ml-experiment-to-production
+https://docs.microsoft.com/en-us/azure/machine-learning/how-to-create-machine-learning-pipelines
+https://docs.microsoft.com/en-us/azure/machine-learning/how-to-move-data-in-out-of-pipelines
