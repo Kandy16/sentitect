@@ -5,6 +5,8 @@ import pandas as pd
 import re
 from sklearn.utils import shuffle
 
+from azureml.core import Run
+
 
 # Removes stop words and other entities which are not likely meaningful words
 def text_clean(text):
@@ -16,14 +18,23 @@ def text_clean(text):
 
 
 def run(args):
-    train_df = pd.read_csv(os.path.join(args.data_path,"train-data.csv"))
-    train_df = shuffle(train_df)[0:args.data_count]
+    df_list = []
+    print(f'Data path: {args.data_path}')
 
-    test_df = pd.read_csv(os.path.join(args.data_path,"test-data.csv"))
-    test_df = shuffle(test_df)[0:args.data_count]
+    #data_path = Run.get_context().input_datasets['input_data']
+
+    #print(f'Listing files inside directory {data_path}')
+    for file1 in os.listdir(args.data_path):
+        print(file1)
+
+    for file1 in os.listdir(args.data_path):
+        if(file1.endswith('.csv')):
+            df = pd.read_csv(os.path.join(args.data_path,file1))
+            df = shuffle(df)[0:args.data_count]
+            df_list.append(df)
 
     # Create a merged data set and review initial information   
-    combined_df = pd.concat([train_df, test_df])
+    combined_df = pd.concat(df_list)
 
      # Clean data sets
     combined_df.review = combined_df.review.apply(text_clean)

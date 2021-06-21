@@ -148,7 +148,7 @@ def run(args):
     print('Accuracy is', acc)
 
     runObj.log('accuracy', float(acc))
-
+    # the best model is saved to a persistent location
 
     return clf_final
 
@@ -172,35 +172,6 @@ if __name__ == "__main__":
     
     result = run(args)
 
-    # the best model is saved to a persistent location
-
-    result.booster_.save_model(os.path.join(args.output, 'sentitect-best-model.txt'))
-    joblib.dump(value=result, filename= os.path.join(args.output, 'sentitect-best-model.pkl'))
-
-    runObj = Run.get_context()
-    ws = runObj.experiment.workspace
-    datastore = ws.get_default_datastore()
-
-    datastore.upload(src_dir=args.output,
-                 target_path='datasets/best-model/',
-                 overwrite=True)
-
-    #os.environ["sentitect-best-model"] = os.path.join(args.output, 'sentitect-best-model.pkl')
-
-    #print(os.getenv('sentitect-best-model'))    
-
-    #print(DataPath(datastore, 'datasets/best-model/sentitect-best-model.pkl').path_on_datastore)
-
-    # get hold of the current run
-    #runObj = Run.get_context()
-
-    #model = runObj.register_model(model_name='sentitect-best-model-txt',
-    #                        model_path=os.path.join(args.output, 'best-model.txt'))
-
-    #model = runObj.register_model(model_name='sentitect-best-model-pkl',
-    #                        model_path=os.path.join(args.output, 'sentitect-best-model.pkl'))
-
-    #print(model.name, model.id, model.version, sep='\t')
-    #print(result.head(5))
-    #result.to_csv(os.path.join(args.output,"output-data-prep.csv"), index=False)
+    print('Saving the best model...')
+    joblib.dump(value=result, filename= os.path.join(args.output, 'sentitect-best-model-pkl.pkl'))
 

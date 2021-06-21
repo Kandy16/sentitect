@@ -11,7 +11,6 @@ from azureml.core.compute import ComputeTarget
 
 from azureml.pipeline.steps import PythonScriptStep
 from azureml.data import OutputFileDatasetConfig
-from azureml.data.datapath import DataPath
 
 #from azureml.core.environment import Environment
 from azureml.core.conda_dependencies import CondaDependencies
@@ -29,13 +28,13 @@ print(ws.name, ws.location, ws.resource_group, sep='\t')
 aml_run_config = RunConfiguration()
 
 # choose a name for your cluster. If not available then create the instance
-compute_name = os.environ.get("AML_COMPUTE_CLUSTER_NAME", "senti-train")
+compute_name = os.environ.get("AML_COMPUTE_CLUSTER_NAME", "senti-predict")
 if compute_name in ws.compute_targets:
     compute_target = ws.compute_targets[compute_name]
     if compute_target and type(compute_target) is AmlCompute:
         print('found compute target. just use it. ' + compute_name)
 else:
-    print(f'creating a new compute target {compute_name}...')
+    print('creating a new compute target...')
     
     compute_min_nodes = os.environ.get("AML_COMPUTE_CLUSTER_MIN_NODES", 0)
     compute_max_nodes = os.environ.get("AML_COMPUTE_CLUSTER_MAX_NODES", 4)
@@ -48,7 +47,8 @@ else:
                                                                 max_nodes=compute_max_nodes)
 
     # create the cluster
-    compute_target = ComputeTarget.create(ws, compute_name, provisioning_config)
+    compute_target = ComputeTarget.create(
+        ws, compute_name, provisioning_config)
 
     # can poll for a minimum number of nodes and for a specific timeout.
     # if no min node count is provided it will use the scale settings for the cluster
@@ -70,18 +70,19 @@ aml_run_config.environment = env
 
 #first of all the local data folder is copied into a datastore.
 datastore = ws.get_default_datastore()
-datastore.upload(src_dir='../data-train',
-                 target_path='data-train/',
+datastore.upload(src_dir='../data-predict',
+                 target_path='data-predict/',
                  overwrite=True)
+
+
 datastore_path = [
-    DataPath(datastore, 'data/train-data.csv'),
-    DataPath(datastore, 'data/test-data.csv')
+    DataPath(datastore, 'data/predict-data.csv')
 ]
 #dataset = Dataset.File.from_files(path=datastore_path)
-dataset = Dataset.File.from_files(path=(datastore, 'data-train/'))
+dataset = Dataset.File.from_files(path=(datastore, 'data-predict/'))
 
 output_data1 = OutputFileDatasetConfig(destination = (datastore, 'outputdataset/{run-id}'))
-#output_data_dataset = output_data1.register_on_complete(name = 'prepared_output_data')
+output_data_dataset = output_data1.register_on_complete(name = 'prepared_output_data')
 
 # the data preparation does primitive cleaning and stores the intermediate result in datastore
 #data-count -1 will read all the data. 100 or 200 size is considered a toy set
@@ -93,7 +94,6 @@ data_prep_step = PythonScriptStep(
         '--data-count',-1,
         "--output", output_data1
         ],
-    #inputs=[dataset.as_named_input('input_data').as_mount()],
     compute_target=compute_target,
     runconfig=aml_run_config,
     allow_reuse=True
@@ -122,28 +122,18 @@ output_data3 = OutputFileDatasetConfig(destination = (datastore, 'outputdataset/
 
 train_step = PythonScriptStep(
     source_directory='.',
-    script_name='train.py',
+    script_name='predict.py',
     arguments=[
         '--data-path', output_data2.as_input(),
-        "--output", output_data3
+        '--output', output_data3
         ],
     compute_target=compute_target,
     runconfig=aml_run_config,
     allow_reuse=True
 )
-
-register_step = PythonScriptStep(
-    source_directory='.',
-    script_name='register.py',
-    arguments=[
-        '--model-path', output_data3.as_input(),
-        ],
-    compute_target=compute_target,
-    runconfig=aml_run_config,
-    allow_reuse=True
-)
+ 
 # the pipeline sequence
-train_models = [data_prep_step, vectorize_step, train_step, register_step]
+train_models = [data_prep_step, vectorize_step, predict_step]
 
 from azureml.pipeline.core import Pipeline
 
@@ -154,22 +144,3 @@ pipeline1 = Pipeline(workspace=ws, steps=[train_models])
 experiment_name = 'sentitect-expr'
 pipeline_run1 = Experiment(workspace=ws, name=experiment_name).submit(pipeline1)
 pipeline_run1.wait_for_completion()
-
-'''
-config = ScriptRunConfig(
-    source_directory='.',
-    script='data_prep.py',
-    compute_target=compute_target,
-    environment=env,
-    arguments=[
-        '--data_path', dataset.as_named_input('input').as_mount(),
-        '--data_count',200
-        ],
-)
-
-run = exp.submit(config)
-aml_url = run.get_portal_url()
-print("Submitted to compute cluster. Click link below")
-print("")
-print(aml_url)
-'''
