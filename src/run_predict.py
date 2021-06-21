@@ -11,6 +11,7 @@ from azureml.core.compute import ComputeTarget
 
 from azureml.pipeline.steps import PythonScriptStep
 from azureml.data import OutputFileDatasetConfig
+from azureml.data.datapath import DataPath
 
 #from azureml.core.environment import Environment
 from azureml.core.conda_dependencies import CondaDependencies
@@ -82,7 +83,6 @@ datastore_path = [
 dataset = Dataset.File.from_files(path=(datastore, 'data-predict/'))
 
 output_data1 = OutputFileDatasetConfig(destination = (datastore, 'outputdataset/{run-id}'))
-output_data_dataset = output_data1.register_on_complete(name = 'prepared_output_data')
 
 # the data preparation does primitive cleaning and stores the intermediate result in datastore
 #data-count -1 will read all the data. 100 or 200 size is considered a toy set
@@ -91,7 +91,7 @@ data_prep_step = PythonScriptStep(
     script_name='data_prep.py',
     arguments=[
         '--data-path', dataset.as_named_input('input').as_mount(),
-        '--data-count',-1,
+        '--data-count',10,
         "--output", output_data1
         ],
     compute_target=compute_target,
@@ -120,7 +120,7 @@ vectorize_step = PythonScriptStep(
 # the efficient model is saved to a persistent location
 output_data3 = OutputFileDatasetConfig(destination = (datastore, 'outputdataset/{run-id}'))
 
-train_step = PythonScriptStep(
+predict_step = PythonScriptStep(
     source_directory='.',
     script_name='predict.py',
     arguments=[

@@ -84,7 +84,7 @@ register_step = PythonScriptStep(
     source_directory='.',
     script_name='register.py',
     arguments=[
-        '--data-path', dataset.as_named_input('input').as_download(),
+        '--model-path', dataset.as_named_input('input').as_download(),
         ],
     compute_target=compute_target,
     runconfig=aml_run_config,

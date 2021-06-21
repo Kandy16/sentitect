@@ -11,11 +11,16 @@ import joblib
 
 def run(args):
 
-    reg_model_path = Model.get_model_path('sentitect-best-model-pkl')
+    runObj = Run.get_context()
+    ws = runObj.experiment.workspace
+
+    reg_model_path = Model.get_model_path(model_name='sentimodel', _workspace=ws)
+    #print(os.getenv('AZUREML_MODEL_DIR'))
+    #reg_model_path = os.path.join(os.getenv('AZUREML_MODEL_DIR'), 'sentimodel')
     best_model = joblib.load(reg_model_path)
     
     # read the vectors an convert them to numpy
-    input = pd.read_csv(os.path.join(args.data_path,"output-vectorize.csv"))
+    data = pd.read_csv(os.path.join(args.data_path,"output-vectorize.csv"))
     data['vectors'] = data['vectors'].apply(lambda row: [float(t) for t in row.split(';')])
     x = data.vectors.values
     x = [np.array(tmp) for tmp in x]
@@ -43,6 +48,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     result = run(args)
-    result[['review','prediction']].to_csv(os.path.join(args.output, 'output.csv') index=False)
+    result[['review','prediction']].to_csv(os.path.join(args.output, 'output.csv'), index=False)
     print(result.head(5))
      
