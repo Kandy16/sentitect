@@ -6,7 +6,7 @@ import pandas as pd
 
 from azureml.core import Run
 from azureml.core.runconfig import DataPath
-
+from azureml.core.model import Model
 import joblib
 
 def run(args):
